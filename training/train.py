@@ -8,6 +8,7 @@ import pytz
 import logging
 import argparse
 import itertools
+import warnings
 from datetime import datetime
 
 import torch
@@ -47,7 +48,7 @@ def main(config_path):
 
     # Create timestamped output directory
     tz = pytz.timezone("Asia/Taipei")
-    now_str = datetime.now(tz).strftime("%Y-%m-%d_%H-%M-%S")
+    now_str = datetime.now(tz).strftime("%Y-%m-%d_%H:%M:%S")
     run_name = f"{config['output']['run_name_prefix']}_{now_str}"
     output_dir = os.path.join(config["output"]["output_dir_root"], run_name)
     config["output"][
@@ -141,6 +142,7 @@ def main(config_path):
         optimizer=optimizer,
         num_warmup_steps=config["lr_scheduler"]["num_warmup_steps"]
         * accelerator.num_processes,
+        power=config["lr_scheduler"]["power"],
         num_training_steps=max_train_steps * accelerator.num_processes,
         num_cycles=config["lr_scheduler"]["num_cycles"],
     )
