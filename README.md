@@ -3,3 +3,7 @@
 ```bash
 accelerate launch --config_file path/to/accelerate/config.yaml train.py --config path/to/training/config.yaml
 ```
+
+# TODO
+
+- [ ] Compute metrics in validation: CLAP, KL-Divergence, FAD
