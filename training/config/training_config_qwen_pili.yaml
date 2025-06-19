@@ -4,7 +4,7 @@
 # File & Directory Paths
 # -------------------
 data:
-  meta_data_path: "../dset/pili_no_vocals_47s_v*.json"
+  meta_data_path: "../dset/pili_no_vocals_47s_qwen_pili.json"
   audio_data_root: "/mnt/gestalt/home/ndrw1221/datasets/pili/pili_no_vocals_47s"
   audio_latent_root: "/mnt/gestalt/home/ndrw1221/datasets/pili/pili_no_vocals_47s_latent"
   
@@ -15,7 +15,7 @@ output:
   output_dir_root: "/mnt/gestalt/home/ndrw1221/sao_pili-output/output"
   use_wandb: true
   wandb_project_name: "stable-audio-pili"
-  run_name_prefix: "v*_cross_kv"
+  run_name_prefix: "qwen_pili"
   checkpointing_steps: 1000
   validation_steps: 1000
   
@@ -26,7 +26,7 @@ training:
   val_ratio: 0.1
   train_batch_size: 6
   gradient_accumulation_steps: 16
-  learning_rate: 1.0e-5
+  learning_rate: 2.0e-5
   weight_decay: 1.0e-3
   num_train_epochs: 1000 # The number of steps is around this value times 25
   max_train_steps: 5000 # If null, calculated from num_train_epochs
@@ -36,7 +36,7 @@ training:
 # LoRA Parameters (if use_lora is true)
 # -------------------
 lora:
-  use_lora: false
+  use_lora: true
   r: 32
   alpha: 96
   target_modules: ["to_q", "to_k", "to_v", "to_out.0"]
@@ -52,7 +52,7 @@ peft:
 # Dataloader Parameters
 # -------------------
 dataloader:
-  val_batch_size: 2
+  val_batch_size: 5
   num_workers: 4
 
 # -------------------
@@ -61,7 +61,7 @@ dataloader:
 lr_scheduler:
   type: "polynomial" # Options: "linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "piecewise_constant"
   num_warmup_steps: 100
-  power: 3.5 # For polynomial scheduler
+  power: 3.0 # For polynomial scheduler
   num_cycles: 10 # For cosine_with_restarts scheduler
 
 # -------------------
@@ -69,4 +69,4 @@ lr_scheduler:
 # -------------------
 validation:
   denoise_steps: 100
-  num_samples_to_log_per_batch: 5
+  num_samples_to_log_per_batch: 2

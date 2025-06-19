@@ -90,6 +90,16 @@ def main(config_path):
             use_dora=False,
         )
         transformer = get_peft_model(transformer, lora_conf)
+    elif config["peft"]["cross_kv"]:
+        logger.info(
+            "Applying PEFT that only trains W^k and W^v in cross-attention layers..."
+        )
+        transformer.requires_grad_(False)
+        for block in transformer.transformer_blocks:
+            block.attn2.to_k.weight.requires_grad = True
+            block.attn2.to_v.weight.requires_grad = True
+            block.attn2.to_k.weight.data = block.attn2.to_k.weight.data.float()
+            block.attn2.to_v.weight.data = block.attn2.to_v.weight.data.float()
     else:
         logger.info("Fine-tuning the full transformer model.")
         transformer.requires_grad_(True)

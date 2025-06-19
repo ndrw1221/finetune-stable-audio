@@ -83,15 +83,16 @@ def log_validation(val_dataloader, pipeline, config, accelerator, global_step):
             bsz = len(prompt_texts)
 
             with torch.no_grad():
-                audio = pipeline(
-                    prompt=prompt_texts,
-                    num_inference_steps=val_config["denoise_steps"],
-                    audio_end_in_s=batch["seconds_total"][
-                        0
-                    ],  # Assumes all in batch have same duration
-                    num_waveforms_per_prompt=1,
-                    generator=generator,
-                ).audios
+                with torch.autocast("cuda", dtype=torch.float16):
+                    audio = pipeline(
+                        prompt=prompt_texts,
+                        num_inference_steps=val_config["denoise_steps"],
+                        audio_end_in_s=batch["seconds_total"][
+                            0
+                        ],  # Assumes all in batch have same duration
+                        num_waveforms_per_prompt=1,
+                        generator=generator,
+                    ).audios
 
             for j in range(bsz):
                 idx = i * bsz + j
