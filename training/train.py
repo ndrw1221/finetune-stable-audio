@@ -72,9 +72,53 @@ def main(config_path):
     )
     pipeline.to(accelerator.device)
 
+    # --- Textual Inversion Setup ---
+    if config.get("textual_inversion", {}).get("use_textual_inversion"):
+        logger.info("Setting up Textual Inversion...")
+        tokenizer = pipeline.tokenizer
+        text_encoder = pipeline.text_encoder
+
+        ti_config = config["textual_inversion"]
+        placeholder_token = ti_config["placeholder_token"]
+
+        # Add new token to tokenizer
+        num_added_tokens = tokenizer.add_tokens(placeholder_token)
+        if num_added_tokens == 0:
+            raise ValueError(
+                f"The tokenizer already contains the token {placeholder_token}. Please pass a different"
+                " `placeholder_token` that is not already in the tokenizer."
+            )
+
+        # Get original embeddings before resizing to calculate stats
+        with torch.no_grad():
+            original_embeds = text_encoder.get_input_embeddings().weight.clone()
+            mean = original_embeds.mean(dim=0)
+            std = original_embeds.std(dim=0)
+
+        # Resize token embeddings
+        text_encoder.resize_token_embeddings(len(tokenizer))
+
+        # Initialize new token embedding
+        token_embeds = text_encoder.get_input_embeddings().weight.data
+        placeholder_token_id = tokenizer.convert_tokens_to_ids(placeholder_token)
+
+        # Initialize with random noise based on existing embeddings' stats
+        token_embeds[placeholder_token_id] = torch.normal(mean, std).to(
+            token_embeds.dtype
+        )
+
+        # Freeze all text_encoder parameters except the new token embeddings
+        text_encoder.requires_grad_(False)
+        text_encoder.get_input_embeddings().weight.requires_grad = True
+        logger.info(
+            f"Added new token '{placeholder_token}' and initialized it randomly with the mean and std of existing embeddings."
+        )
+
     # Freeze non-trainable components
     pipeline.vae.requires_grad_(False)
-    pipeline.text_encoder.requires_grad_(False)
+    # Keep text_encoder trainable status as set above for TI
+    if not config.get("textual_inversion", {}).get("use_textual_inversion"):
+        pipeline.text_encoder.requires_grad_(False)
     pipeline.projection_model.requires_grad_(False)
 
     transformer = pipeline.transformer
@@ -133,8 +177,18 @@ def main(config_path):
     )
 
     # --- 4. Optimizer and LR Scheduler ---
+    params_to_optimize = list(
+        filter(lambda p: p.requires_grad, transformer.parameters())
+    )
+    if config.get("textual_inversion", {}).get("use_textual_inversion"):
+        ti_params = filter(
+            lambda p: p.requires_grad, pipeline.text_encoder.parameters()
+        )
+        params_to_optimize.extend(list(ti_params))
+        logger.info("Added textual inversion embeddings to the optimizer.")
+
     optimizer = torch.optim.AdamW(
-        transformer.parameters(),
+        params_to_optimize,
         lr=config["training"]["learning_rate"],
         weight_decay=config["training"]["weight_decay"],
     )
@@ -158,11 +212,28 @@ def main(config_path):
     )
 
     # --- 5. Accelerator Preparation ---
-    transformer, optimizer, train_dataloader, val_dataloader, lr_scheduler = (
-        accelerator.prepare(
-            transformer, optimizer, train_dataloader, val_dataloader, lr_scheduler
+    if config.get("textual_inversion", {}).get("use_textual_inversion"):
+        (
+            transformer,
+            pipeline.text_encoder,
+            optimizer,
+            train_dataloader,
+            val_dataloader,
+            lr_scheduler,
+        ) = accelerator.prepare(
+            transformer,
+            pipeline.text_encoder,
+            optimizer,
+            train_dataloader,
+            val_dataloader,
+            lr_scheduler,
         )
-    )
+    else:
+        (transformer, optimizer, train_dataloader, val_dataloader, lr_scheduler) = (
+            accelerator.prepare(
+                transformer, optimizer, train_dataloader, val_dataloader, lr_scheduler
+            )
+        )
 
     # --- 6. Tracking and Resuming ---
     global_step = 0
@@ -277,6 +348,17 @@ def main(config_path):
                             output_dir, f"checkpoint-{global_step}"
                         )
                         accelerator.save_state(save_path)
+
+                        # Rename model files for clarity
+                        transformer_path = os.path.join(save_path, "model.safetensors")
+                        if os.path.exists(transformer_path):
+                            os.rename(transformer_path, os.path.join(save_path, "transformer.safetensors"))
+
+                        if config.get("textual_inversion", {}).get("use_textual_inversion"):
+                            text_encoder_path = os.path.join(save_path, "model_1.safetensors")
+                            if os.path.exists(text_encoder_path):
+                                os.rename(text_encoder_path, os.path.join(save_path, "text_encoder.safetensors"))
+                        
                         logger.info(f"Saved checkpoint to {save_path}")
 
                     if global_step % config["output"]["validation_steps"] == 0:
