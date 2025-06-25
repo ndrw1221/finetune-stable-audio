@@ -4,9 +4,9 @@
 # File & Directory Paths
 # -------------------
 data:
-  meta_data_path: "../dset/傲笑紅塵_no_vocals.json"
-  audio_data_root: "/mnt/gestalt/home/ndrw1221/datasets/pili/pili_no_vocals_47s"
-  audio_latent_root: "/mnt/gestalt/home/ndrw1221/datasets/pili/pili_no_vocals_47s_latent"
+  meta_data_path: "../dset/Yoasobi-Idol.json"
+  audio_data_root: "/home/ndrw1221/lab-projects/finetune-stable-audio/Yoasobi-Idol/Yoasobi-Idol"
+  audio_latent_root: "/home/ndrw1221/lab-projects/finetune-stable-audio/Yoasobi-Idol/Yoasobi-Idol-latent"
   
 # -------------------
 # Output & Logging
@@ -15,7 +15,7 @@ output:
   output_dir_root: "/mnt/gestalt/home/ndrw1221/sao_pili-output/output"
   use_wandb: true
   wandb_project_name: "stable-audio-pili"
-  run_name_prefix: "cus_diff_cross_kv_ti_6.25e-6"
+  run_name_prefix: "cus_diff_cross_kv_ti_6.25e-6_Idol"
   checkpointing_steps: 50
   validation_steps: 50
   
