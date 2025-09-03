@@ -121,6 +121,10 @@ def main(config_path):
         pipeline.text_encoder.requires_grad_(False)
     pipeline.projection_model.requires_grad_(False)
 
+    # Set the sigma values for the scheduler
+    pipeline.scheduler.config.sigma_max = 500
+    pipeline.scheduler.config.sigma_min = 0.3
+
     transformer = pipeline.transformer
 
     # Apply LoRA if configured
@@ -352,13 +356,23 @@ def main(config_path):
                         # Rename model files for clarity
                         transformer_path = os.path.join(save_path, "model.safetensors")
                         if os.path.exists(transformer_path):
-                            os.rename(transformer_path, os.path.join(save_path, "transformer.safetensors"))
+                            os.rename(
+                                transformer_path,
+                                os.path.join(save_path, "transformer.safetensors"),
+                            )
 
-                        if config.get("textual_inversion", {}).get("use_textual_inversion"):
-                            text_encoder_path = os.path.join(save_path, "model_1.safetensors")
+                        if config.get("textual_inversion", {}).get(
+                            "use_textual_inversion"
+                        ):
+                            text_encoder_path = os.path.join(
+                                save_path, "model_1.safetensors"
+                            )
                             if os.path.exists(text_encoder_path):
-                                os.rename(text_encoder_path, os.path.join(save_path, "text_encoder.safetensors"))
-                        
+                                os.rename(
+                                    text_encoder_path,
+                                    os.path.join(save_path, "text_encoder.safetensors"),
+                                )
+
                         logger.info(f"Saved checkpoint to {save_path}")
 
                     if global_step % config["output"]["validation_steps"] == 0:
