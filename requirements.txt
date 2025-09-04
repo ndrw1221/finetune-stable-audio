@@ -1,0 +1,44 @@
+# Core ML and Deep Learning frameworks
+torch>=2.5.0
+torchvision
+torchaudio
+torchsde
+
+# Diffusion and Audio Processing
+diffusers>=0.30.0
+transformers>=4.30.0
+accelerate>=0.20.0
+
+# PEFT and Model Optimization
+peft>=0.4.0
+
+# Audio Processing
+soundfile>=0.12.0
+
+# Utilities and Logging
+tqdm>=4.64.0
+pyyaml>=6.0
+pytz>=2023.3
+
+# Experiment Tracking (optional but used in code)
+wandb>=0.15.0
+
+# Scientific Computing
+numpy>=1.24.0
+
+# # Configuration and argument parsing
+# argparse  # part of standard library, but included for completeness
+
+# # Memory management and garbage collection
+# gc  # part of standard library
+
+# # File and OS operations
+# os  # part of standard library
+# json  # part of standard library
+# math  # part of standard library
+# warnings  # part of standard library
+# datetime  # part of standard library
+# shutil  # part of standard library
+# logging  # part of standard library
+# random  # part of standard library
+# itertools  # part of standard library
